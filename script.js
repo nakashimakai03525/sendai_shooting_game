@@ -29,13 +29,13 @@ function createEnemy() {
     if (gameOver) return;
     const enemy = document.createElement('div');
     enemy.className = 'enemy';
-    enemy.textContent = '🦁'; // シーサー
+    enemy.textContent = '🐮'; // 仙台名物
     const x = Math.random() * (gameWidth - 40);
     const y = -40;
     enemy.style.left = `${x}px`;
     enemy.style.top = `${y}px`;
     gameContainer.appendChild(enemy);
-    enemies.push({ element: enemy, x, y, speedY: 1, speedX: Math.random() > 0.5 ? 2 : -2 });
+    enemies.push({ element: enemy, x, y, speedY: 2, speedX: Math.random() > 0.5 ? 2 : -2 });
 }
 
 function createBullet() {
@@ -116,7 +116,7 @@ function update() {
         }
         
         // Enemy shoot
-        if (Math.random() < 0.005) {
+        if (Math.random() < 0.01) {
             createEnemyBullet(enemy);
         }
     }
@@ -124,7 +124,7 @@ function update() {
     // Update enemy bullets
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const bullet = enemyBullets[i];
-        bullet.y += 5;
+        bullet.y += 7;
         if (bullet.y > gameHeight) {
             bullet.element.remove();
             enemyBullets.splice(i, 1);
@@ -192,5 +192,5 @@ function endGame() {
 }
 
 // Start game
-setInterval(createEnemy, 2000);
+setInterval(createEnemy, 1000);
 update();
