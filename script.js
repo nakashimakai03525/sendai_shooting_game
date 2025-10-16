@@ -2,28 +2,37 @@ const gameContainer = document.getElementById('game-container');
 const player = document.getElementById('player');
 const scoreDisplay = document.getElementById('score');
 const gameOverDisplay = document.getElementById('game-over');
+const retryButton = document.getElementById('retry-button');
+const specialAttackGauge = document.getElementById('special-attack-gauge');
 
 const gameWidth = gameContainer.offsetWidth;
 const gameHeight = gameContainer.offsetHeight;
 
-let playerX = player.offsetLeft;
+let playerX = gameWidth / 2 - 25;
 const playerSpeed = 10;
 let score = 0;
 let gameOver = false;
+let animationFrameId;
 
-const bullets = [];
-const enemies = [];
-const enemyBullets = [];
+let bullets = [];
+let enemies = [];
+let enemyBullets = [];
 
 let keys = {};
 
+let specialAttackGaugeValue = 0;
+const specialAttackGaugeMax = 100;
+let canUseSpecialAttack = false;
+
 document.addEventListener('keydown', (e) => {
-    keys[e.key] = true;
+    keys[e.key.toLowerCase()] = true;
 });
 
 document.addEventListener('keyup', (e) => {
-    keys[e.key] = false;
+    keys[e.key.toLowerCase()] = false;
 });
+
+retryButton.addEventListener('click', resetGame);
 
 function createEnemy() {
     if (gameOver) return;
@@ -61,21 +70,48 @@ function createEnemyBullet(enemy) {
     enemyBullets.push({ element: bullet, x, y });
 }
 
+function updateSpecialAttackGauge(value) {
+    specialAttackGaugeValue = Math.min(specialAttackGaugeValue + value, specialAttackGaugeMax);
+    const percentage = (specialAttackGaugeValue / specialAttackGaugeMax) * 100;
+    specialAttackGauge.style.width = `${percentage}%`;
+    if (specialAttackGaugeValue >= specialAttackGaugeMax) {
+        canUseSpecialAttack = true;
+        specialAttackGauge.style.backgroundColor = 'gold';
+    }
+}
+
+function useSpecialAttack() {
+    if (!canUseSpecialAttack) return;
+
+    // 画面上のすべての敵を破壊
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        enemies[i].element.remove();
+        enemies.splice(i, 1);
+        score += 10; // 必殺技でもスコア加算
+    }
+    scoreDisplay.textContent = `Score: ${score}`;
+
+    // ゲージをリセット
+    specialAttackGaugeValue = 0;
+    canUseSpecialAttack = false;
+    specialAttackGauge.style.width = '0%';
+    specialAttackGauge.style.backgroundColor = 'cyan';
+}
+
 function update() {
     if (gameOver) return;
 
     // Player movement
-    if (keys['ArrowLeft'] && playerX > 0) {
+    if (keys['arrowleft'] && playerX > 0) {
         playerX -= playerSpeed;
     }
-    if (keys['ArrowRight'] && playerX < gameWidth - player.offsetWidth) {
+    if (keys['arrowright'] && playerX < gameWidth - player.offsetWidth) {
         playerX += playerSpeed;
     }
     player.style.left = `${playerX}px`;
 
     // Player shoot
-    if (keys[' '] || keys['Spacebar']) {
-        // Add a cooldown to prevent too many bullets
+    if (keys[' '] || keys['spacebar']) {
         if (!keys.fired) {
             createBullet();
             keys.fired = true;
@@ -83,6 +119,11 @@ function update() {
                 keys.fired = false;
             }, 200);
         }
+    }
+    
+    // Special Attack
+    if (keys['x']) {
+        useSpecialAttack();
     }
 
     // Update bullets
@@ -115,7 +156,6 @@ function update() {
             enemy.element.style.left = `${enemy.x}px`;
         }
         
-        // Enemy shoot
         if (Math.random() < 0.01) {
             createEnemyBullet(enemy);
         }
@@ -146,6 +186,7 @@ function update() {
                 enemies.splice(j, 1);
                 score += 10;
                 scoreDisplay.textContent = `Score: ${score}`;
+                updateSpecialAttackGauge(5); // 敵を倒すとゲージが5増える
             }
         }
     }
@@ -170,8 +211,7 @@ function update() {
         }
     }
 
-
-    requestAnimationFrame(update);
+    animationFrameId = requestAnimationFrame(update);
 }
 
 function isColliding(a, b) {
@@ -187,8 +227,39 @@ function isColliding(a, b) {
 
 function endGame() {
     gameOver = true;
+    cancelAnimationFrame(animationFrameId);
     gameOverDisplay.classList.remove('hidden');
     player.style.display = 'none';
+}
+
+function resetGame() {
+    // Reset variables
+    score = 0;
+    gameOver = false;
+    playerX = gameWidth / 2 - 25;
+    keys = {};
+    specialAttackGaugeValue = 0;
+    canUseSpecialAttack = false;
+
+    // Update displays
+    scoreDisplay.textContent = 'Score: 0';
+    gameOverDisplay.classList.add('hidden');
+    player.style.display = 'block';
+    player.style.left = `${playerX}px`;
+    specialAttackGauge.style.width = '0%';
+    specialAttackGauge.style.backgroundColor = 'cyan';
+
+
+    // Clear all elements
+    bullets.forEach(b => b.element.remove());
+    enemies.forEach(e => e.element.remove());
+    enemyBullets.forEach(b => b.element.remove());
+    bullets = [];
+    enemies = [];
+    enemyBullets = [];
+
+    // Restart game loop
+    update();
 }
 
 // Start game
