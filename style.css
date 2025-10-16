@@ -1,0 +1,89 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f0f0f0;
+    margin: 0;
+}
+
+#game-container {
+    width: 600px;
+    height: 800px;
+    border: 3px solid #333;
+    position: relative;
+    overflow: hidden;
+    background-color: #000;
+    background-image: url('https://raw.githubusercontent.com/user-attachments/assets/e87355e9-699b-4a99-88e1-7d3a6398900c/sendai-background.png'); /* 仙台の背景画像を仮で設定 */
+    background-size: cover;
+    background-position: center;
+}
+
+#player {
+    width: 50px;
+    height: 50px;
+    background-color: #333;
+    position: absolute;
+    bottom: 20px;
+    left: 275px;
+}
+
+/* 伊達政宗の兜（三日月） */
+#player::before {
+    content: '';
+    position: absolute;
+    width: 80px;
+    height: 40px;
+    border-top: 15px solid gold;
+    border-radius: 50%;
+    top: -35px;
+    left: -15px;
+}
+
+
+.enemy {
+    width: 40px;
+    height: 40px;
+    font-size: 30px;
+    text-align: center;
+    line-height: 40px;
+    position: absolute;
+}
+
+.bullet {
+    width: 10px;
+    height: 20px;
+    background-color: cyan;
+    position: absolute;
+}
+
+.enemy-bullet {
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+    position: absolute;
+}
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-size: 24px;
+}
+
+#game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    text-align: center;
+    font-size: 48px;
+    text-shadow: 3px 3px 5px black;
+}
+
+.hidden {
+    display: none;
+}
