@@ -17,8 +17,13 @@ let animationFrameId;
 let bullets = [];
 let enemies = [];
 let enemyBullets = [];
+let items = [];
 
 let keys = {};
+
+let isRapidFireActive = false;
+let isShieldActive = false;
+let rapidFireTimeout;
 
 let specialAttackGaugeValue = 0;
 const specialAttackGaugeMax = 100;
@@ -45,6 +50,21 @@ function createEnemy() {
     enemy.style.top = `${y}px`;
     gameContainer.appendChild(enemy);
     enemies.push({ element: enemy, x, y, speedY: 2, speedX: Math.random() > 0.5 ? 2 : -2 });
+}
+
+function createItem() {
+    if (gameOver) return;
+    const item = document.createElement('div');
+    const itemType = Math.random() > 0.5 ? 'rapid-fire' : 'shield';
+    item.className = `item ${itemType}`;
+    item.textContent = itemType === 'rapid-fire' ? 'R' : 'S';
+
+    const x = Math.random() * (gameWidth - 30);
+    const y = -30;
+    item.style.left = `${x}px`;
+    item.style.top = `${y}px`;
+    gameContainer.appendChild(item);
+    items.push({ element: item, x, y, type: itemType });
 }
 
 function createBullet() {
@@ -98,6 +118,24 @@ function useSpecialAttack() {
     specialAttackGauge.style.backgroundColor = 'cyan';
 }
 
+function activateRapidFire() {
+    isRapidFireActive = true;
+    clearTimeout(rapidFireTimeout);
+    rapidFireTimeout = setTimeout(() => {
+        isRapidFireActive = false;
+    }, 10000); // 10秒間
+}
+
+function activateShield() {
+    isShieldActive = true;
+    player.classList.add('shielded');
+}
+
+function deactivateShield() {
+    isShieldActive = false;
+    player.classList.remove('shielded');
+}
+
 function update() {
     if (gameOver) return;
 
@@ -117,7 +155,7 @@ function update() {
             keys.fired = true;
             setTimeout(() => {
                 keys.fired = false;
-            }, 200);
+            }, isRapidFireActive ? 50 : 200); // 連射アイテム効果
         }
     }
     
@@ -135,6 +173,18 @@ function update() {
             bullets.splice(i, 1);
         } else {
             bullet.element.style.top = `${bullet.y}px`;
+        }
+    }
+
+    // Update items
+    for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        item.y += 3;
+        if (item.y > gameHeight) {
+            item.element.remove();
+            items.splice(i, 1);
+        } else {
+            item.element.style.top = `${item.y}px`;
         }
     }
 
@@ -174,6 +224,20 @@ function update() {
     }
 
     // Collision detection
+    // Player -> Item
+    for (let i = items.length - 1; i >= 0; i--) {
+        const item = items[i];
+        if (item && isColliding(item.element, player)) {
+            if (item.type === 'rapid-fire') {
+                activateRapidFire();
+            } else if (item.type === 'shield') {
+                activateShield();
+            }
+            item.element.remove();
+            items.splice(i, 1);
+        }
+    }
+
     // Bullet -> Enemy
     for (let i = bullets.length - 1; i >= 0; i--) {
         for (let j = enemies.length - 1; j >= 0; j--) {
@@ -186,7 +250,7 @@ function update() {
                 enemies.splice(j, 1);
                 score += 10;
                 scoreDisplay.textContent = `Score: ${score}`;
-                updateSpecialAttackGauge(5); // 敵を倒すとゲージが5増える
+                updateSpecialAttackGauge(20); // 敵を倒すとゲージが20増える
             }
         }
     }
@@ -197,7 +261,11 @@ function update() {
         if (bullet && isColliding(bullet.element, player)) {
             bullet.element.remove();
             enemyBullets.splice(i, 1);
-            endGame();
+            if (isShieldActive) {
+                deactivateShield();
+            } else {
+                endGame();
+            }
         }
     }
     
@@ -207,7 +275,11 @@ function update() {
         if (enemy && isColliding(enemy.element, player)) {
             enemy.element.remove();
             enemies.splice(i, 1);
-            endGame();
+            if (isShieldActive) {
+                deactivateShield();
+            } else {
+                endGame();
+            }
         }
     }
 
@@ -240,6 +312,9 @@ function resetGame() {
     keys = {};
     specialAttackGaugeValue = 0;
     canUseSpecialAttack = false;
+    isRapidFireActive = false;
+    deactivateShield();
+    clearTimeout(rapidFireTimeout);
 
     // Update displays
     scoreDisplay.textContent = 'Score: 0';
@@ -254,9 +329,11 @@ function resetGame() {
     bullets.forEach(b => b.element.remove());
     enemies.forEach(e => e.element.remove());
     enemyBullets.forEach(b => b.element.remove());
+    items.forEach(i => i.element.remove());
     bullets = [];
     enemies = [];
     enemyBullets = [];
+    items = [];
 
     // Restart game loop
     update();
@@ -264,4 +341,5 @@ function resetGame() {
 
 // Start game
 setInterval(createEnemy, 1000);
+setInterval(createItem, 15000); // 15秒ごとにアイテムを生成
 update();
